@@ -194,7 +194,10 @@ func showEndpoints() {
     fmt.Println(yellow("  ├──────────────────────────────────────┤"))
     fmt.Printf("  │ %-10s %-25s │\n", cyan("PUT"), "/branches/:id : Edit cabang ")
     fmt.Println(yellow("  ├──────────────────────────────────────┤"))
+    
     fmt.Printf("  │ %-10s %-25s │\n", cyan("DELETE"), "/branches/:id : Menghapus cabang")
+    fmt.Println(yellow("  └──────────────────────────────────────┘"))
+    fmt.Printf("  │ %-10s %-25s │\n", cyan("POST"), "/login : dengan token jwt")
     fmt.Println(yellow("  └──────────────────────────────────────┘"))
     fmt.Println()
     fmt.Println(green("  Use 'curl' or tools like Postman to access these endpoints"))
