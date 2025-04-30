@@ -8,6 +8,8 @@ import (
 	"api-kasir/models"
 	"api-kasir/supabase"
 	"api-kasir/utils"
+	"io"
+	"bytes"
 )
 
 // GetBranches
@@ -138,9 +140,107 @@ func Login(c *fiber.Ctx) error {
 			"error": "Failed to generate token",
 		})
 	}
-
+    
+    // melakukan perubahan ... 
+    
 	return c.JSON(fiber.Map{
-		"message": "Login successful",
-		"token":   token,
-	})
+	"message":   "Login successful",
+	"token":     token,
+	"branch_id": foundUser.BranchID,
+     })
+     
 }
+
+
+
+
+
+// yang di kerjakan sekarang kalau tidak cocok tinggal hapus 
+
+
+func GetProductsByBranch(c *fiber.Ctx) error {
+    branchID := c.Params("branch_id")
+    query := "products?branch_id=eq." + branchID
+
+    req, err := utils.NewRequest("GET", query, nil)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    res, err := utils.Client.Do(req)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+    defer res.Body.Close()
+
+    body, _ := io.ReadAll(res.Body)
+    return c.Status(res.StatusCode).Send(body)
+}
+
+
+
+
+func CreateProduct(c *fiber.Ctx) error {
+    body := c.Body()
+
+    req, err := utils.NewRequest("POST", "products", bytes.NewReader(body))
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    res, err := utils.Client.Do(req)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+    defer res.Body.Close()
+
+    resBody, _ := io.ReadAll(res.Body)
+    return c.Status(res.StatusCode).Send(resBody)
+}
+
+
+
+
+func UpdateProduct(c *fiber.Ctx) error {
+    id := c.Params("id")
+    path := "products?id=eq." + id
+
+    req, err := utils.NewRequest("PATCH", path, bytes.NewReader(c.Body()))
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    res, err := utils.Client.Do(req)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+    defer res.Body.Close()
+
+    resBody, _ := io.ReadAll(res.Body)
+    return c.Status(res.StatusCode).Send(resBody)
+}
+
+
+
+
+func DeleteProduct(c *fiber.Ctx) error {
+    id := c.Params("id")
+    path := "products?id=eq." + id
+
+    req, err := utils.NewRequest("DELETE", path, nil)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    res, err := utils.Client.Do(req)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+    defer res.Body.Close()
+
+    resBody, _ := io.ReadAll(res.Body)
+    return c.Status(res.StatusCode).Send(resBody)
+}
+
+
+

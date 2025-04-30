@@ -95,6 +95,18 @@ func SetRoutes(app *fiber.App) {
     app.Get("/branches", middleware.JWTMiddleware, handlers.GetBranches)
 	
 	
+	
+	
+	// yang di kerjakan sekarang kalau tidak cocok hapus
+	
+    app.Get("/branches/:branch_id/products", handlers.GetProductsByBranch)
+    app.Post("/products", handlers.CreateProduct)
+    app.Patch("/products/:id", handlers.UpdateProduct)
+    app.Delete("/products/:id", handlers.DeleteProduct)
+
+	
+	
+	
 }
 
 
