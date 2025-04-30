@@ -90,7 +90,7 @@ func SetRoutes(app *fiber.App) {
 	app.Post("/branches", handlers.CreateBranch)
 	app.Put("/branches/:id", handlers.UpdateBranch)
 	app.Delete("/branches/:id", handlers.DeleteBranch)
-	app.Post("/login", handlers.Login)
+	app.Post("/login", handlers.Login) // ini kan sudah 
 	SetupProtectedRoutes(app)
     app.Get("/branches", middleware.JWTMiddleware, handlers.GetBranches)
 	

@@ -45,9 +45,11 @@ func CreateBranch(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "Cabang berhasil ditambahkan",
-	})
+    return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+    "message": "Cabang berhasil ditambahkan",
+    "branch": branch,
+         })
+    
 }
 
 // UpdateBranch
@@ -103,6 +105,12 @@ func Login(c *fiber.Ctx) error {
 
 	email := user.Email
 	password := user.Password
+	
+	if email == "" || password == "" {
+    return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+        "error": "Email and password are required",
+    })
+    }
 
 	req, err := utils.NewRequest("GET", "users?email=eq."+email+"&select=id,email,password,role,branch_id", nil)
 	if err != nil {
@@ -143,11 +151,21 @@ func Login(c *fiber.Ctx) error {
     
     // melakukan perubahan ... 
     
-	return c.JSON(fiber.Map{
+	/*return c.JSON(fiber.Map{
 	"message":   "Login successful",
 	"token":     token,
 	"branch_id": foundUser.BranchID,
      })
+     */
+     
+     return c.JSON(fiber.Map{
+    "token": token,
+    "user": fiber.Map{
+        "id":        foundUser.ID,
+        "role":      foundUser.Role,
+        "branch_id": foundUser.BranchID,
+    },
+})
      
 }
 
