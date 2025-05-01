@@ -20,10 +20,21 @@ import (
 
 var verboseMode bool
 
+var (
+    hiRedPrint     = color.New(color.FgHiRed).PrintlnFunc()
+    hiGreenPrint   = color.New(color.FgHiGreen).PrintlnFunc()
+    hiYellowPrint    = color.New(color.FgHiBlue).PrintlnFunc()
+    
+    hiMagentaPrint = color.New(color.FgHiMagenta).PrintlnFunc()
+    hiCyanPrint    = color.New(color.FgHiCyan).PrintlnFunc()
+    hiWhitePrint   = color.New(color.FgHiWhite).PrintlnFunc()
+    hiBlackPrint   = color.New(color.FgHiBlack).PrintlnFunc()
+)
+
+
 func main() {
 	if len(os.Args) == 1 {
 		showWelcomeMessage()
-		showUsage()
 		os.Exit(0)
 	}
 
@@ -47,15 +58,21 @@ func run() error {
 	case "start":
 		return startAPIServer()
 	case "help":
-		showEndpoints()
+		showUsage()
 		return nil
+	case "-m":
+	     showEndpoints()
+	     return nil
+	case "details":
+	      showDetails()
+	      return nil
 	case "detail":
 		if len(os.Args) < 3 {
 			return fmt.Errorf("masukkan path endpoint setelah perintah 'detail'")
 		}
 		return showEndpointDetail(os.Args[2])
 	default:
-		showUsage()
+
 		return fmt.Errorf("command tidak dikenali: %s", command)
 	}
 }
@@ -135,26 +152,66 @@ func startAPIServer() error {
 }
 
 func showWelcomeMessage() {
-	fmt.Println("=== Selamat datang di API Kasir CLI ===")
+    hiCyanPrint("Use commands :")
+    hiYellowPrint("go run main help")
+    
 }
 
 func showUsage() {
-	fmt.Println("Penggunaan:")
-	fmt.Println("  api-kasir start            - Menjalankan API server")
-	fmt.Println("  api-kasir help             - Menampilkan daftar endpoint")
-	fmt.Println("  api-kasir detail [path]    - Menampilkan detail endpoint")
-	fmt.Println("  --verbose                  - Menampilkan informasi detail saat start")
+	hiCyanPrint("Perintah yang tersedia:")
+	hiYellowPrint("  go run main.go [perintah]")
+
+	hiCyanPrint("\nDaftar perintah:")
+	hiYellowPrint("  start               -> Menjalankan server")
+	hiYellowPrint("  start --verbose     -> Menjalankan server dengan mode debug")
+	hiYellowPrint("  -m                  -> Menampilkan daftar endpoint")
+	hiYellowPrint("  details             -> Menampilkan detail endpoint")
+	hiYellowPrint("  -v                  -> Menampilkan informasi tentang API")
 }
 
-func showEndpoints() {
-	fmt.Println("Daftar Endpoint yang tersedia:")
-	fmt.Println("  GET    /branches")
-	fmt.Println("  POST   /branches")
-	fmt.Println("  PUT    /branches/:id")
-	fmt.Println("  DELETE /branches/:id")
-	fmt.Println("  POST   /login")
-	fmt.Println("  POST   /products")
+
+
+func showDetails() {
+	hiCyanPrint("Detail penggunaan endpoint:")
+	hiYellowPrint("  go run main.go detail [METHOD] [ENDPOINT]")
+
+	hiCyanPrint("\nDaftar endpoint:")
+	hiYellowPrint("  POST   /login")
+	hiYellowPrint("  GET    /branches")
+	hiYellowPrint("  POST   /branches")
+	hiYellowPrint("  PUT    /branches/:id")
+	hiYellowPrint("  DELETE /branches/:id")
+	hiYellowPrint("  GET    /branches/:branch_id/products")
+	hiYellowPrint("  POST   /products")
+	hiYellowPrint("  PATCH  /products/:id")
+	hiYellowPrint("  DELETE /products/:id")
 }
+
+
+
+
+func showEndpoints() {
+    
+	hiCyanPrint("Daftar Endpoint yang tersedian saat ini:")
+
+	// Autentikasi
+	hiYellowPrint("  POST   /login                 -> Login dan menerima token JWT")
+
+	// Cabang
+	hiYellowPrint("  GET    /branches              -> Mengambil daftar cabang")
+	hiYellowPrint("  POST   /branches              -> Menambahkan cabang baru")
+	hiYellowPrint("  PUT    /branches/:id          -> Memperbarui data cabang berdasarkan ID")
+	hiYellowPrint("  DELETE /branches/:id          -> Menghapus cabang berdasarkan ID")
+
+	// Produk
+	hiYellowPrint("  GET    /products              -> Mengambil daftar produk")
+	hiYellowPrint("  POST   /products              -> Menambahkan produk baru")
+	hiYellowPrint("  PUT    /products/:id          -> Memperbarui data produk berdasarkan ID")
+	hiYellowPrint("  DELETE /products/:id          -> Menghapus produk berdasarkan ID")
+
+
+}
+
 
 type EndpointDetail struct {
 	Method      string
