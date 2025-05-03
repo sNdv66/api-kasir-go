@@ -7,7 +7,11 @@ import (
 
 // JWT Middleware untuk memverifikasi token
 func JWTMiddleware(c *fiber.Ctx) error {
-    token := c.Get("Authorization")
+    authHeader := c.Get("Authorization")
+    if authHeader == "" || len(authHeader) < 8 || authHeader[:7] != "Bearer " {
+    return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing or invalid token"})
+    }
+    token := authHeader[7:]
 
     if token == "" {
         return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing or invalid token"})

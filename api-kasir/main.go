@@ -10,7 +10,6 @@ import (
 	"time"
 	"api-kasir/router"
 	"api-kasir/utils"
-    "encoding/json"
 	"github.com/fatih/color"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -63,16 +62,10 @@ func run() error {
 	case "-m":
 	     showEndpoints()
 	     return nil
-	case "details":
-	      showDetails()
-	      return nil
-	case "detail":
-		if len(os.Args) < 3 {
-			return fmt.Errorf("masukkan path endpoint setelah perintah 'detail'")
-		}
-		return showEndpointDetail(os.Args[2])
+	case "-v":
+	     showVersion()
+	     return nil
 	default:
-
 		return fmt.Errorf("command tidak dikenali: %s", command)
 	}
 }
@@ -153,7 +146,8 @@ func startAPIServer() error {
 
 func showWelcomeMessage() {
     hiCyanPrint("Use commands :")
-    hiYellowPrint("go run main help")
+    
+    hiYellowPrint("go run main.go help")
     
 }
 
@@ -165,331 +159,57 @@ func showUsage() {
 	hiYellowPrint("  start               -> Menjalankan server")
 	hiYellowPrint("  start --verbose     -> Menjalankan server dengan mode debug")
 	hiYellowPrint("  -m                  -> Menampilkan daftar endpoint")
-	hiYellowPrint("  details             -> Menampilkan detail endpoint")
-	hiYellowPrint("  -v                  -> Menampilkan informasi tentang API")
+	hiYellowPrint("  -v                  -> version")
 }
 
-
-
-func showDetails() {
-	hiCyanPrint("Detail penggunaan endpoint:")
-	hiYellowPrint("  go run main.go detail [METHOD] [ENDPOINT]")
-
-	hiCyanPrint("\nDaftar endpoint:")
-	hiYellowPrint("  POST   /login")
-	hiYellowPrint("  GET    /branches")
-	hiYellowPrint("  POST   /branches")
-	hiYellowPrint("  PUT    /branches/:id")
-	hiYellowPrint("  DELETE /branches/:id")
-	hiYellowPrint("  GET    /branches/:branch_id/products")
-	hiYellowPrint("  POST   /products")
-	hiYellowPrint("  PATCH  /products/:id")
-	hiYellowPrint("  DELETE /products/:id")
+func showVersion(){
+    hiCyanPrint("version 0.1.1")
 }
-
-
-
 
 func showEndpoints() {
-    
-	hiCyanPrint("Daftar Endpoint yang tersedian saat ini:")
+	hiCyanPrint("Daftar Endpoint yang tersedia saat ini:\n")
+
+	// Helper untuk format
+	printEP := func(method, path, desc string) {
+		fmt.Printf("[%s]  %s\n      -> %s\n\n", method, path, desc)
+	}
 
 	// Autentikasi
-	hiYellowPrint("  POST   /login                 -> Login dan menerima token JWT")
+	printEP("POST", "/login", "Login dan menerima token JWT")
 
 	// Cabang
-	hiYellowPrint("  GET    /branches              -> Mengambil daftar cabang")
-	hiYellowPrint("  POST   /branches              -> Menambahkan cabang baru")
-	hiYellowPrint("  PUT    /branches/:id          -> Memperbarui data cabang berdasarkan ID")
-	hiYellowPrint("  DELETE /branches/:id          -> Menghapus cabang berdasarkan ID")
+	printEP("GET", "/branches", "Mengambil daftar cabang")
+	printEP("POST", "/branches", "Menambahkan cabang baru")
+	printEP("PUT", "/branches/:id", "Memperbarui data cabang berdasarkan ID")
+	printEP("DELETE", "/branches/:id", "Menghapus cabang berdasarkan ID")
 
 	// Produk
-	hiYellowPrint("  GET    /products              -> Mengambil daftar produk")
-	hiYellowPrint("  POST   /products              -> Menambahkan produk baru")
-	hiYellowPrint("  PUT    /products/:id          -> Memperbarui data produk berdasarkan ID")
-	hiYellowPrint("  DELETE /products/:id          -> Menghapus produk berdasarkan ID")
+	printEP("GET", "/branches/:branch_id/products", "Mengambil daftar produk berdasarkan cabang")
+	printEP("POST", "/products", "Menambahkan produk baru")
+	printEP("PATCH", "/products/:id", "Memperbarui data produk berdasarkan ID")
+	printEP("DELETE", "/products/:id", "Menghapus produk berdasarkan ID")
 
+	// Transaksi
+	printEP("POST", "/transactions", "Membuat transaksi baru")
+	printEP("GET", "/branches/:branch_id/transactions", "Mengambil daftar transaksi berdasarkan cabang")
+	printEP("GET", "/transactions/:id", "Mengambil detail transaksi berdasarkan ID")
 
-}
+	// Item Transaksi
+	printEP("POST", "/transaction-items", "Menambahkan item ke transaksi")
+	printEP("GET", "/transactions/:id/items", "Mengambil daftar item berdasarkan transaksi ID")
 
+	// Pergerakan Stok
+	printEP("GET", "/stock-movements", "Mengambil histori pergerakan stok")
+	printEP("POST", "/stock-movements", "Menambahkan pergerakan stok")
+	printEP("GET", "/stock-summary", "Mengambil ringkasan stok")
 
-type EndpointDetail struct {
-	Method      string
-	Path        string
-	Description string
-	Input       any
-	Headers     string
-	Output      any
-	Errors      []map[string]interface{} // Changed from ErrorResponses to Errors for consistency
-}
+	// Laporan
+	printEP("GET", "/reports/sales", "Mendapatkan laporan penjualan")
 
-var endpointDetails = []EndpointDetail{
-	{
-		Method:      "POST",
-		Path:        "/login",
-		Description: "Login dan mendapatkan JWT token",
-		Input: map[string]string{
-			"email":    "admin@example.com",
-			"password": "123456",
-		},
-		Headers: "Content-Type: application/json",
-		Output: map[string]any{
-			"token": "jwt_token",
-			"user": map[string]string{
-				"id":   "uuid",
-				"role": "admin",
-			},
-		},
-		Errors: []map[string]interface{}{
-			{
-				"code":   400,
-				"error":  "Invalid request",
-				"detail": "Format email atau password salah",
-			},
-			{
-				"code":   401,
-				"error":  "Unauthorized",
-				"detail": "Email atau password tidak valid",
-			},
-		},
-	},
-	{
-		Method:      "GET",
-		Path:        "/branches",
-		Description: "Mendapatkan daftar semua cabang",
-		Headers:     "Authorization: Bearer <token>\nContent-Type: application/json",
-		Output: []map[string]interface{}{
-			{
-				"id":        "branch_123",
-				"name":      "Cabang Jakarta",
-				"address":   "Jl. Sudirman No. 1",
-				"createdAt": "2023-01-01T00:00:00Z",
-			},
-		},
-		Errors: []map[string]interface{}{
-			{
-				"code":   401,
-				"error":  "Unauthorized",
-				"detail": "Token tidak valid atau kadaluarsa",
-			},
-			{
-				"code":   500,
-				"error":  "Internal Server Error",
-				"detail": "Gagal mengambil data cabang",
-			},
-		},
-	},
-	{
-		Method:      "POST",
-		Path:        "/branches",
-		Description: "Membuat cabang baru",
-		Headers:     "Authorization: Bearer <token>\nContent-Type: application/json",
-		Input: map[string]interface{}{
-			"name":    "Nama Cabang",
-			"address": "Alamat Lengkap",
-		},
-		Output: map[string]interface{}{
-			"message": "Cabang berhasil ditambahkan",
-			"branch": map[string]interface{}{
-				"id":        "generated-uuid",
-				"name":      "Nama Cabang",
-				"address":   "Alamat Lengkap",
-				"createdAt": "2023-01-01T00:00:00Z",
-			},
-		},
-		Errors: []map[string]interface{}{
-			{
-				"code":   400,
-				"error":  "Bad Request",
-				"detail": "Nama atau alamat tidak boleh kosong",
-			},
-		},
-	},
-	{
-		Method:      "PUT",
-		Path:        "/branches/:id",
-		Description: "Memperbarui data cabang",
-		Headers:     "Authorization: Bearer <token>\nContent-Type: application/json",
-		Input: map[string]interface{}{
-			"name":    "Nama Cabang Updated",
-			"address": "Alamat Updated",
-		},
-		Output: map[string]interface{}{
-			"message": "Cabang berhasil diperbarui",
-			"branch": map[string]interface{}{
-				"id":        "existing-uuid",
-				"name":      "Nama Cabang Updated",
-				"address":   "Alamat Updated",
-				"updatedAt": "2023-01-02T00:00:00Z",
-			},
-		},
-	},
-	{
-		Method:      "DELETE",
-		Path:        "/branches/:id",
-		Description: "Menghapus cabang",
-		Headers:     "Authorization: Bearer <token>\nContent-Type: application/json",
-		Output: map[string]interface{}{
-			"message": "Cabang berhasil dihapus",
-			"deletedAt": "2023-01-03T00:00:00Z",
-		},
-	},
-    {
-        Method:      "GET",
-        Path:        "/branches/:branch_id/products",
-        Description: "Mendapatkan daftar produk berdasarkan cabang",
-        Headers:     "Authorization: Bearer <token>\nContent-Type: application/json",
-        Output: []map[string]interface{}{
-            {
-                "id":        "prod_123",
-                "name":      "Produk A",
-                "price":     100000,
-                "stock":     50,
-                "branch_id": "branch_123",
-                "created_at": "2023-01-01T00:00:00Z",
-            },
-        },
-        Errors: []map[string]interface{}{
-            {
-                "code":    500,
-                "error":   "Internal Server Error",
-                "detail": "Gagal mengambil data produk",
-            },
-        },
-    },
-    // POST /products
-    {
-        Method:      "POST",
-        Path:        "/products",
-        Description: "Menambahkan produk baru",
-        Headers:     "Authorization: Bearer <token>\nContent-Type: application/json",
-        Input: map[string]interface{}{
-            "name":      "Produk Baru",
-            "price":     150000,
-            "stock":     100,
-            "branch_id": "branch_123",
-        },
-        Output: map[string]interface{}{
-            "id":        "prod_124",
-            "name":      "Produk Baru",
-            "price":     150000,
-            "stock":     100,
-            "branch_id": "branch_123",
-            "created_at": "2023-01-02T00:00:00Z",
-        },
-        Errors: []map[string]interface{}{
-            {
-                "code":    500,
-                "error":   "Internal Server Error",
-                "detail": "Gagal menambahkan produk",
-            },
-        },
-    },
-    // PATCH /products/:id
-    {
-        Method:      "PATCH",
-        Path:        "/products/:id",
-        Description: "Memperbarui data produk",
-        Headers:     "Authorization: Bearer <token>\nContent-Type: application/json",
-        Input: map[string]interface{}{
-            "price": 175000,
-            "stock": 75,
-        },
-        Output: map[string]interface{}{
-            "id":        "prod_123",
-            "name":      "Produk A",
-            "price":     175000,
-            "stock":     75,
-            "branch_id": "branch_123",
-            "updated_at": "2023-01-03T00:00:00Z",
-        },
-        Errors: []map[string]interface{}{
-            {
-                "code":    500,
-                "error":   "Internal Server Error",
-                "detail": "Gagal memperbarui produk",
-            },
-        },
-    },
-    // DELETE /products/:id
-    {
-        Method:      "DELETE",
-        Path:        "/products/:id",
-        Description: "Menghapus produk",
-        Headers:     "Authorization: Bearer <token>\nContent-Type: application/json",
-        Output: map[string]interface{}{
-            "message": "Produk berhasil dihapus",
-            "id":      "prod_123",
-        },
-        Errors: []map[string]interface{}{
-            {
-                "code":    500,
-                "error":   "Internal Server Error",
-                "detail": "Gagal menghapus produk",
-            },
-        },
-    },
-
-}
-
-func showEndpointDetail(path string) error {
-	cyan := color.New(color.FgCyan).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
-
-	endpoints := []EndpointDetail{}
-	for _, ep := range endpointDetails {
-		if ep.Path == path {
-			endpoints = append(endpoints, ep)
-		}
-	}
-
-	if len(endpoints) == 0 {
-		return fmt.Errorf(red("Endpoint tidak ditemukan: %s"), path)
-	}
-
-	fmt.Println()
-	fmt.Println(green("🔍 Detail Endpoint"))
-	fmt.Println("─────────────────────────────────────")
-	
-	for _, ep := range endpoints {
-		fmt.Println(yellow("Method:     "), cyan(ep.Method))
-		fmt.Println(yellow("Path:       "), ep.Path)
-		fmt.Println(yellow("Deskripsi:  "), ep.Description)
-		fmt.Println(yellow("Headers:    "), ep.Headers)
-		
-		if ep.Input != nil {
-			fmt.Println(yellow("\nContoh Input:"))
-			printPrettyJSON(ep.Input)
-		}
-		
-		if ep.Output != nil {
-			fmt.Println(yellow("\nContoh Output:"))
-			printPrettyJSON(ep.Output)
-		}
-		
-		if len(ep.Errors) > 0 {
-			fmt.Println(yellow("\nError Responses:"))
-			for _, err := range ep.Errors {
-				fmt.Printf("  %s %s: %s\n", 
-					red("Code:"), err["code"], err["error"])
-				fmt.Printf("  %s %s\n\n", 
-					yellow("Detail:"), err["detail"])
-			}
-		}
-		
-		fmt.Println("─────────────────────────────────────")
-	}
-	return nil
-}
-
-// Helper function to print pretty JSON
-func printPrettyJSON(data interface{}) {
-	jsonData, err := json.MarshalIndent(data, "  ", "  ")
-	if err != nil {
-		fmt.Println("  Error formatting JSON:", err)
-		return
-	}
-	fmt.Println(string(jsonData))
+	// Dashboard
+	printEP("GET", "/branches/:branch_id/dashboard/today-sales", "Penjualan hari ini")
+	printEP("GET", "/branches/:branch_id/dashboard/top-products", "Produk terlaris hari ini")
+	printEP("GET", "/branches/:branch_id/dashboard/weekly-sales", "Penjualan mingguan")
+	printEP("GET", "/branches/:branch_id/dashboard/sales-chart", "Grafik penjualan")
+	printEP("GET", "/branches/:branch_id/dashboard/low-stock", "Produk dengan stok rendah")
 }

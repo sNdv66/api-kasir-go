@@ -8,8 +8,10 @@ import (
 	"api-kasir/models"
 	"api-kasir/supabase"
 	"api-kasir/utils"
+	"api-kasir/services"
 	"io"
 	"bytes"
+	"fmt"
 )
 
 // GetBranches
@@ -170,12 +172,6 @@ func Login(c *fiber.Ctx) error {
 }
 
 
-
-
-
-// yang di kerjakan sekarang kalau tidak cocok tinggal hapus 
-
-
 func GetProductsByBranch(c *fiber.Ctx) error {
     branchID := c.Params("branch_id")
     query := "products?branch_id=eq." + branchID
@@ -260,5 +256,362 @@ func DeleteProduct(c *fiber.Ctx) error {
     return c.Status(res.StatusCode).Send(resBody)
 }
 
+// POST /transactions
+func CreateTransaction(c *fiber.Ctx) error {
+	var trx models.Transaction
+	if err := c.BodyParser(&trx); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
 
+	data, err := json.Marshal(trx)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to encode JSON"})
+	}
+
+	req, err := utils.NewRequest("POST", "transactions", bytes.NewReader(data))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	res, err := utils.Client.Do(req)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer res.Body.Close()
+
+	body, _ := io.ReadAll(res.Body)
+	return c.Status(res.StatusCode).Send(body)
+}
+
+// GET /branches/:branch_id/transactions
+func GetTransactionsByBranch(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	req, err := utils.NewRequest("GET", "transactions?branch_id=eq."+branchID, nil)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	res, err := utils.Client.Do(req)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer res.Body.Close()
+
+	body, _ := io.ReadAll(res.Body)
+	return c.Status(res.StatusCode).Send(body)
+}
+
+// GET /transactions/:id
+func GetTransactionByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	req, err := utils.NewRequest("GET", "transactions?id=eq."+id, nil)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	res, err := utils.Client.Do(req)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer res.Body.Close()
+
+	body, _ := io.ReadAll(res.Body)
+	return c.Status(res.StatusCode).Send(body)
+}
+
+
+
+// POST /transaction-items
+func CreateTransactionItem(c *fiber.Ctx) error {
+	var item models.TransactionItem
+	if err := c.BodyParser(&item); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	data, err := json.Marshal(item)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to encode JSON"})
+	}
+
+	req, err := utils.NewRequest("POST", "transaction_items", bytes.NewReader(data))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	res, err := utils.Client.Do(req)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer res.Body.Close()
+
+	body, _ := io.ReadAll(res.Body)
+	return c.Status(res.StatusCode).Send(body)
+}
+
+// GET /transactions/:id/items
+func GetTransactionItemsByTransactionID(c *fiber.Ctx) error {
+	transactionID := c.Params("id")
+	req, err := utils.NewRequest("GET", "transaction_items?transaction_id=eq."+transactionID, nil)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	res, err := utils.Client.Do(req)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer res.Body.Close()
+
+	body, _ := io.ReadAll(res.Body)
+	return c.Status(res.StatusCode).Send(body)
+	
+}
+
+func CreateStockMovement(c *fiber.Ctx) error {
+	var input services.StockMovement
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
+	}
+
+	// Ambil stok saat ini dari produk
+	product, err := services.GetProductByID(input.ProductID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to get product"})
+	}
+
+	// Hitung stok baru
+	newStock := product.Stock
+	if input.Type == "out" {
+		if product.Stock < input.Quantity {
+			return c.Status(400).JSON(fiber.Map{"error": "Stok tidak cukup"})
+		}
+		newStock -= input.Quantity
+	} else if input.Type == "in" {
+		newStock += input.Quantity
+	}
+
+	// Update stok produk
+	if err := services.UpdateProductStock(input.ProductID, newStock); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to update product stock"})
+	}
+
+	// Simpan movement ke Supabase
+	resp, err := services.AddStockMovement(input)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer resp.Body.Close()
+
+	return c.Status(201).JSON(fiber.Map{"message": "Stock movement recorded"})
+}
+
+
+
+func GetStockMovements(c *fiber.Ctx) error {
+	branchID := c.Query("branch_id")
+	productID := c.Query("product_id")
+	filter := ""
+	if branchID != "" {
+		filter += "branch_id=eq." + branchID
+	}
+	if productID != "" {
+		if filter != "" {
+			filter += "&"
+		}
+		filter += "product_id=eq." + productID
+	}
+
+	if filter != "" {
+		filter += "&"
+	}
+	filter += "order=created_at.desc"
+
+	req, err := utils.NewRequest("GET", "stock_movements?"+filter, nil)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal membuat request"})
+	}
+
+	resp, err := utils.Client.Do(req)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Request gagal"})
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return c.Status(resp.StatusCode).Send(body)
+	}
+
+	return c.Send(body)
+}
+
+func GetStockSummary(c *fiber.Ctx) error {
+	branchID := c.Query("branch_id")
+	from := c.Query("from")
+	to := c.Query("to")
+
+	if branchID == "" || from == "" || to == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "branch_id, from, and to are required"})
+	}
+
+	path := fmt.Sprintf(
+		"stock_movements?branch_id=eq.%s&created_at=gte.%s&created_at=lte.%s",
+		branchID, from, to,
+	)
+
+	req, err := utils.NewRequest("GET", path, nil)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	resp, err := utils.Client.Do(req)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer resp.Body.Close()
+
+	var movements []services.StockMovement
+	if err := json.NewDecoder(resp.Body).Decode(&movements); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to parse response"})
+	}
+
+	// Hitung ringkasan
+	totalIn := 0
+	totalOut := 0
+	byProduct := make(map[string]map[string]interface{})
+
+	for _, m := range movements {
+		if _, ok := byProduct[m.ProductID]; !ok {
+			byProduct[m.ProductID] = map[string]interface{}{
+				"product_id": m.ProductID,
+				"in":         0,
+				"out":        0,
+			}
+		}
+		if m.Type == "in" {
+			totalIn += m.Quantity
+			byProduct[m.ProductID]["in"] = byProduct[m.ProductID]["in"].(int) + m.Quantity
+		} else if m.Type == "out" {
+			totalOut += m.Quantity
+			byProduct[m.ProductID]["out"] = byProduct[m.ProductID]["out"].(int) + m.Quantity
+		}
+	}
+
+	result := []map[string]interface{}{}
+	for _, p := range byProduct {
+		result = append(result, p)
+	}
+
+	return c.JSON(fiber.Map{
+		"total_in":   totalIn,
+		"total_out":  totalOut,
+		"by_product": result,
+	})
+}
+
+
+func GetSalesReport(c *fiber.Ctx) error {
+	branchID := c.Query("branch_id")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	if branchID == "" || startDate == "" || endDate == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Missing query parameters"})
+	}
+
+	report, err := services.FetchSalesReport(branchID, startDate, endDate)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(report)
+}
+
+
+
+func GetTodaySales(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	result, err := services.FetchTodaySales(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(result)
+}
+
+
+
+func GetTopProductsToday(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	result, err := services.FetchTopProductsToday(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(result)
+}
+
+func GetWeeklySales(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	data, err := services.FetchWeeklySales(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(data)
+}
+
+
+func GetTransactionsDaily(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	data, err := services.FetchTransactionsDaily(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(data)
+}
+
+func GetAverageTransactionValue(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	data, err := services.FetchAverageTransactionValue(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"average_transaction_value": data})
+}
+
+func GetLowStockAlert(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	data, err := services.FetchLowStockAlert(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(data)
+}
+
+func GetTopProducts(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	data, err := services.FetchTopProducts(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(data)
+}
+
+
+func GetSalesChart(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	data, err := services.FetchSalesChart(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(data)
+}
+
+
+func GetLowStock(c *fiber.Ctx) error {
+	branchID := c.Params("branch_id")
+	data, err := services.FetchLowStock(branchID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(data)
+}
 

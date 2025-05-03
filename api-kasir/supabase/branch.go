@@ -68,7 +68,6 @@ func CreateBranch(branch models.Branch) error {
 
 
 
-
 func UpdateBranch(id string, input models.CreateBranchInput) error {
 	body, err := json.Marshal(map[string]interface{}{
 		"name":    input.Name,

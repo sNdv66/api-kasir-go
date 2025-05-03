@@ -84,26 +84,42 @@ func SetupProtectedRoutes(app *fiber.App) {
 }
 
 
-
 func SetRoutes(app *fiber.App) {
-	//app.Get("/branches", handlers.GetBranches)
+    
 	app.Post("/branches", handlers.CreateBranch)
 	app.Put("/branches/:id", handlers.UpdateBranch)
 	app.Delete("/branches/:id", handlers.DeleteBranch)
-	app.Post("/login", handlers.Login) // ini kan sudah 
+	app.Get("/branches", middleware.JWTMiddleware, handlers.GetBranches)
+	
+	
+	app.Post("/login", handlers.Login)
 	SetupProtectedRoutes(app)
-    app.Get("/branches", middleware.JWTMiddleware, handlers.GetBranches)
-	
-	
-	
-	
-	// yang di kerjakan sekarang kalau tidak cocok hapus
-	
+    
+    
     app.Get("/branches/:branch_id/products", handlers.GetProductsByBranch)
     app.Post("/products", handlers.CreateProduct)
     app.Patch("/products/:id", handlers.UpdateProduct)
     app.Delete("/products/:id", handlers.DeleteProduct)
-
+    app.Post("/transactions", handlers.CreateTransaction)
+    app.Get("/branches/:branch_id/transactions", handlers.GetTransactionsByBranch)
+    app.Get("/transactions/:id", handlers.GetTransactionByID)
+    app.Post("/transaction-items", handlers.CreateTransactionItem)
+    app.Get("/transactions/:id/items", handlers.GetTransactionItemsByTransactionID)
+    app.Get("/stock-movements", handlers.GetStockMovements)
+    app.Post("/stock-movements", handlers.CreateStockMovement)
+    app.Get("/stock-summary", handlers.GetStockSummary)
+    
+    app.Get("/reports/sales", handlers.GetSalesReport)
+    
+    app.Get("/branches/:branch_id/dashboard/today-sales", handlers.GetTodaySales)
+    
+    app.Get("/branches/:branch_id/dashboard/top-products", handlers.GetTopProducts)
+    app.Get("/branches/:branch_id/dashboard/sales-chart", handlers.GetSalesChart)
+    app.Get("/branches/:branch_id/dashboard/low-stock", handlers.GetLowStock)
+    //
+	
+	app.Get("/branches/:branch_id/dashboard/top-products", handlers.GetTopProductsToday)
+	app.Get("/branches/:branch_id/dashboard/weekly-sales", handlers.GetWeeklySales)
 	
 	
 	
