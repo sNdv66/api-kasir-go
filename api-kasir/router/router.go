@@ -90,6 +90,7 @@ func SetRoutes(app *fiber.App) {
 	app.Put("/branches/:id", handlers.UpdateBranch)
 	app.Delete("/branches/:id", handlers.DeleteBranch)
 	app.Get("/branches", middleware.JWTMiddleware, handlers.GetBranches)
+	app.Get("/branches/:id", middleware.JWTMiddleware, handlers.GetBranchByID)
 	
 	
 	app.Post("/login", handlers.Login)
@@ -97,6 +98,7 @@ func SetRoutes(app *fiber.App) {
     
     
     app.Get("/branches/:branch_id/products", handlers.GetProductsByBranch)
+    
     app.Post("/products", handlers.CreateProduct)
     app.Patch("/products/:id", handlers.UpdateProduct)
     app.Delete("/products/:id", handlers.DeleteProduct)

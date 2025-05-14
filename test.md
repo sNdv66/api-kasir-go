@@ -266,3 +266,58 @@ curl -X POST http://localhost:3000/transaction-items \
     "quantity": 2,
     "subtotal": 100000
   }'
+  
+  
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluMTIzQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImJyYW5jaF9pZCI6IjBlMTI1YmRlLTA4ZWQtNDAxOC04NmExLTNlYTQ0MzUzMzVlMyIsImV4cCI6MTc0NjM4NzIxN30.z5w7SdUehwnla6WFyfOlWqCOpr-hMfd7493l8DUljUI
+
+
+hey -n 10000 -c 100 -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluMTIzQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImJyYW5jaF9pZCI6IjBlMTI1YmRlLTA4ZWQtNDAxOC04NmExLTNlYTQ0MzUzMzVlMyIsImV4cCI6MTc0NjM4NzIxN30.z5w7SdUehwnla6WFyfOlWqCOpr-hMfd7493l8DUljUI" http://localhost:3000/api/endpoint
+
+
+
+# In
+hey -n 5000 -c 100 \
+  -H "Content-Type: application/json" \
+  -m POST \
+  -d '{"username":"admin","password":"admin123"}' \
+  http://localhost:3000/login
+  
+  
+~/go/bin/hey -n 10000 -c 200 \
+  -H "Content-Type: application/json" \
+  -m POST \
+  -d '{"email": "admin123@gmail.com", "password": "password123"}' \
+  http://localhost:3000/login
+  
+  
+  
+  
+blackcoffe -> https://thgswhfsrlkpbbohpjsq.supabase.co/storage/v1/object/public/cabang//blackcoffe.webp
+  
+  
+  cappuchino -> https://thgswhfsrlkpbbohpjsq.supabase.co/storage/v1/object/public/cabang//cappuccino.webp
+  
+  hotchocolate -> https://thgswhfsrlkpbbohpjsq.supabase.co/storage/v1/object/public/cabang//hotchocolate.webp
+  
+  latte -> https://thgswhfsrlkpbbohpjsq.supabase.co/storage/v1/object/public/cabang//hotchocolate.webp
+  
+  mocha -> https://thgswhfsrlkpbbohpjsq.supabase.co/storage/v1/object/public/cabang//mocha.webp
+  
+  
+  branch id cabang a -> 0e125bde-08ed-4018-86a1-3ea4435335e3
+  branch id cabang b -> 17dbfc14-28de-4cac-9e2f-7cdaf48858c9
+  
+  
+  
+  INSERT INTO products (id, name, price, stock, branch_id, created_at, image_url, category)
+VALUES (
+  gen_random_uuid(),
+  'Mocha',
+  20000,
+  15,
+  '0e125bde-08ed-4018-86a1-3ea4435335e3',
+  now(),
+  'https://thgswhfsrlkpbbohpjsq.supabase.co/storage/v1/object/public/cabang//mocha.webp',
+  'Minuman'
+);

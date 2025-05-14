@@ -25,6 +25,36 @@ func GetBranches(c *fiber.Ctx) error {
 	return c.JSON(branches)
 }
 
+func GetBranchByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	req, err := utils.NewRequest("GET", "branches?id=eq."+id, nil)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create request",
+		})
+	}
+
+	res, err := utils.Client.Do(req)
+	if err != nil || res.StatusCode != 200 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Branch not found",
+		})
+	}
+	defer res.Body.Close()
+
+	var branches []models.Branch
+	if err := json.NewDecoder(res.Body).Decode(&branches); err != nil || len(branches) == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Branch not found",
+		})
+	}
+
+	return c.JSON(branches[0])
+}
+
+
+
 // CreateBranch
 func CreateBranch(c *fiber.Ctx) error {
 	var input models.CreateBranchInput
