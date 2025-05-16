@@ -91,6 +91,7 @@ func SetRoutes(app *fiber.App) {
 	app.Delete("/branches/:id", handlers.DeleteBranch)
 	app.Get("/branches", middleware.JWTMiddleware, handlers.GetBranches)
 	app.Get("/branches/:id", middleware.JWTMiddleware, handlers.GetBranchByID)
+	app.Post("/payment", middleware.JWTMiddleware, handlers.HandlePayment)
 	
 	
 	app.Post("/login", handlers.Login)

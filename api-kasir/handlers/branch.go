@@ -12,7 +12,165 @@ import (
 	"io"
 	"bytes"
 	"fmt"
+	"net/http"
 )
+
+type PaymentRequest struct {
+	Items []struct {
+		ProductID string `json:"product_id"`
+		Quantity  int    `json:"quantity"`
+	} `json:"items"`
+	PaymentMethod string  `json:"payment_method"`
+	PaidAmount    float64 `json:"paid_amount"`
+}
+
+
+
+func HandlePayment(c *fiber.Ctx) error {
+	var req PaymentRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid request",
+		})
+	}
+
+	total := 0.0
+	transactionItems := []map[string]interface{}{}
+
+	for _, item := range req.Items {
+		// Ambil produk dari Supabase
+		path := fmt.Sprintf("products?id=eq.%s", item.ProductID)
+		httpReq, err := utils.NewRequest(http.MethodGet, path, nil)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"message": "Gagal request produk"})
+		}
+		res, err := utils.Client.Do(httpReq)
+		if err != nil || res.StatusCode != 200 {
+			return c.Status(400).JSON(fiber.Map{"message": "Produk tidak ditemukan"})
+		}
+		defer res.Body.Close()
+
+		var products []struct {
+			ID    string  `json:"id"`
+			Price float64 `json:"price"`
+			Stock int     `json:"stock"`
+		}
+		body, _ := io.ReadAll(res.Body)
+		_ = json.Unmarshal(body, &products)
+
+		if len(products) == 0 {
+			return c.Status(400).JSON(fiber.Map{"message": "Produk tidak valid"})
+		}
+
+		product := products[0]
+		if product.Stock < item.Quantity {
+			return c.Status(400).JSON(fiber.Map{
+				"message": "Stok tidak cukup untuk produk " + product.ID,
+			})
+		}
+
+		subtotal := product.Price * float64(item.Quantity)
+		total += subtotal
+
+		transactionItems = append(transactionItems, map[string]interface{}{
+			"product_id": item.ProductID,
+			"quantity":   item.Quantity,
+			"subtotal":   subtotal,
+		})
+	}
+
+	if req.PaidAmount < total {
+		return c.Status(400).JSON(fiber.Map{"message": "Jumlah bayar kurang"})
+	}
+
+	// Ambil data dari JWT middleware
+    user := c.Locals("user").(*utils.Claims)
+    userID := user.UserID
+    branchID := user.BranchID
+	// Simpan transaksi
+	trxPayload := map[string]interface{}{
+		"branch_id":      branchID,
+		"user_id":        userID,
+		"total":          total,
+		"payment_method": req.PaymentMethod,
+		"paid_amount":    req.PaidAmount,
+		"change":         req.PaidAmount - total,
+	}
+
+	trxJSON, _ := json.Marshal(trxPayload)
+	
+	/*trxReq, err := utils.NewRequest(http.MethodPost, "transactions", bytes.NewBuffer(trxJSON))
+	*/
+	
+	trxReq, err := utils.NewRequest(http.MethodPost, "transactions", bytes.NewBuffer(trxJSON))
+     trxReq.Header.Set("Prefer", "return=representation")
+	
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"message": "Gagal membuat request transaksi"})
+	}
+	trxRes, err := utils.Client.Do(trxReq)
+	if err != nil || trxRes.StatusCode >= 400 {
+		body, _ := io.ReadAll(trxRes.Body)
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Gagal menyimpan transaksi",
+			"error":   string(body),
+		})
+	}
+	defer trxRes.Body.Close()
+   body, err := io.ReadAll(trxRes.Body)
+   if err != nil {
+    return c.Status(500).JSON(fiber.Map{
+        "message": "Gagal membaca response dari Supabase",
+    })
+    }
+
+	var inserted []struct {
+		ID string `json:"id"`
+	}
+	// body, _ = io.ReadAll(trxRes.Body)
+   _ = json.Unmarshal(body, &inserted)
+   
+   if err := json.Unmarshal(body, &inserted); err != nil {
+	return c.Status(500).JSON(fiber.Map{
+		"message": "Gagal mengurai response dari Supabase",
+		"error":   err.Error(),
+	})
+}
+
+   if len(inserted) == 0 {
+	return c.Status(500).JSON(fiber.Map{
+		"message": "Transaksi berhasil disimpan, tapi tidak mendapatkan ID transaksi dari Supabase",
+	})
+    }
+
+    transactionID := inserted[0].ID
+	// Tambahkan transaction_id ke setiap item
+	for i := range transactionItems {
+		transactionItems[i]["transaction_id"] = transactionID
+	}
+
+	// Simpan ke transaction_items
+	itemsJSON, _ := json.Marshal(transactionItems)
+	itemsReq, err := utils.NewRequest(http.MethodPost, "transaction_items", bytes.NewBuffer(itemsJSON))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"message": "Gagal membuat request item transaksi"})
+	}
+	itemsRes, err := utils.Client.Do(itemsReq)
+	if err != nil || itemsRes.StatusCode >= 400 {
+		body, _ := io.ReadAll(itemsRes.Body)
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Gagal menyimpan item transaksi",
+			"error":   string(body),
+		})
+	}
+	defer itemsRes.Body.Close()
+
+	return c.JSON(fiber.Map{
+		"message":        "Pembayaran berhasil",
+		"transaction_id": transactionID,
+	})
+}
+
 
 // GetBranches
 func GetBranches(c *fiber.Ctx) error {
@@ -139,10 +297,10 @@ func Login(c *fiber.Ctx) error {
 	password := user.Password
 	
 	if email == "" || password == "" {
-    return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-        "error": "Email and password are required",
-    })
-    }
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Email and password are required",
+		})
+	}
 
 	req, err := utils.NewRequest("GET", "users?email=eq."+email+"&select=id,email,password,role,branch_id", nil)
 	if err != nil {
@@ -174,31 +332,27 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := utils.GenerateJWT(foundUser.Email, foundUser.Role, foundUser.BranchID)
+	token, err := utils.GenerateJWT(
+		foundUser.ID,
+		foundUser.Email,
+		foundUser.Role,
+		foundUser.BranchID,
+	)
+
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to generate token",
 		})
 	}
-    
-    // melakukan perubahan ... 
-    
-	/*return c.JSON(fiber.Map{
-	"message":   "Login successful",
-	"token":     token,
-	"branch_id": foundUser.BranchID,
-     })
-     */
-     
-     return c.JSON(fiber.Map{
-    "token": token,
-    "user": fiber.Map{
-        "id":        foundUser.ID,
-        "role":      foundUser.Role,
-        "branch_id": foundUser.BranchID,
-    },
-})
-     
+
+	return c.JSON(fiber.Map{
+		"token": token,
+		"user": fiber.Map{
+			"id":        foundUser.ID,
+			"role":      foundUser.Role,
+			"branch_id": foundUser.BranchID,
+		},
+	})
 }
 
 
@@ -644,4 +798,5 @@ func GetLowStock(c *fiber.Ctx) error {
 	}
 	return c.JSON(data)
 }
+
 

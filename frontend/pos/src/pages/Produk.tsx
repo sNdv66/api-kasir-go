@@ -40,6 +40,9 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { motion } from "framer-motion";
+import { createContext, useContext , ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
+
 
 // Define interfaces
 interface Product {
@@ -74,7 +77,7 @@ const SearchBar = styled('div')(({ theme }) => ({
 }));
 
 const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 2),
+  padding: theme.spacing(0, 1),
   height: '100%',
   position: 'absolute',
   pointerEvents: 'none',
@@ -137,9 +140,10 @@ const Products = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isMedium = useMediaQuery(theme.breakpoints.down('md'));
-
+  const navigate = useNavigate();
+  
   // Calculate grid columns based on viewport size
-  const gridCols = isMobile ? 6 : isMedium ? 4 : 3;
+  const gridCols = isMobile ? 5 : isMedium ? 4 : 3;
   
   // Memoized fetch products function
   const fetchProducts = useCallback(async () => {
@@ -247,7 +251,8 @@ const Products = () => {
         item.id === productId ? { ...item, quantity: newQuantity } : item
       )
     );
-  };
+ };
+  
 
   const clearOrders = () => {
     setOrders([]);
@@ -274,23 +279,26 @@ const Products = () => {
 
   // Calculate total items
   const totalItems = orders.reduce((sum, item) => sum + item.quantity, 0);
-
-  // Handle process order
+  // handleProcessOrdercons
   const handleProcessOrder = () => {
-    setProcessingOrder(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setProcessingOrder(false);
-      setOrders([]);
-      setOpenOrderDrawer(false);
-      setNotification({
-        open: true,
-        message: 'Pesanan berhasil diproses!',
-        type: 'success'
-      });
-    }, 1500);
-  };
+  if (orders.length === 0) {
+    setNotification({
+      open: true,
+      message: 'Keranjang masih kosong!',
+      type: 'warning'
+    });
+    return;
+  }
+
+  setProcessingOrder(true);
+
+  // Simpan orders ke sessionStorage
+  sessionStorage.setItem("orders", JSON.stringify(orders));
+
+  // Pindah ke halaman payment
+  navigate("/payment");
+};
+  
 
   // Handle save order
   const handleSaveOrder = () => {
@@ -323,7 +331,7 @@ const Products = () => {
       sx={{ 
         py: { xs: 1, sm: 2 }, 
         px: { xs: 1, sm: 2 },
-        height: '100vh', 
+        height: '110vh', 
         display: 'flex', 
         flexDirection: 'column' 
       }}
@@ -334,7 +342,7 @@ const Products = () => {
           display: 'flex', 
           flexDirection: { xs: 'column', sm: 'row' },
           alignItems: 'center', 
-          mb: 2, 
+          mb: 1, 
           gap: 1 
         }}
       >
@@ -367,7 +375,7 @@ const Products = () => {
         {!isMobile && (
           <Badge 
             badgeContent={totalItems} 
-            color="primary"
+            color="secondary"
             sx={{ 
               '& .MuiBadge-badge': { 
                 fontSize: 10, 
@@ -378,7 +386,7 @@ const Products = () => {
           >
             <Button
               variant="contained"
-              color="primary"
+              color="secondary"
               startIcon={<ShoppingCartIcon />}
               onClick={() => setOpenOrderDrawer(true)}
               disabled={totalItems === 0}
@@ -434,7 +442,7 @@ const Products = () => {
               p: 3
             }}
           >
-            <SearchIcon sx={{ fontSize: 48, mb: 2, opacity: 0.3 }} />
+            <SearchIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
             <Typography variant="h6">Tidak ada produk ditemukan</Typography>
             <Typography variant="body2" sx={{ mt: 1, maxWidth: 300 }}>
               Coba ubah kata kunci pencarian atau periksa kembali koneksi internet Anda
@@ -463,7 +471,8 @@ const Products = () => {
                     <CardMedia
                       component="div"
                       sx={{ 
-                        height: 120, 
+                        height: 120,
+                        width: 140,
                         bgcolor: 'grey.50', 
                         display: 'flex', 
                         alignItems: 'center', 
@@ -597,8 +606,8 @@ const Products = () => {
         onClose={() => setOpenOrderDrawer(false)}
         PaperProps={{
           sx: {
-            width: isMobile ? '100%' : 400,
-            maxWidth: '100%',
+            width: isMobile ? '99%' : 400,
+            maxWidth: '99%',
             borderRadius: isMobile ? '16px 16px 0 0' : 0,
             maxHeight: isMobile ? '85vh' : '100vh',
           }
@@ -825,7 +834,7 @@ const Products = () => {
                     color="primary"
                     size="large"
                     onClick={handleProcessOrder}
-                    disabled={processingOrder || savingOrder}
+                    disabled={processingOrder}
                     sx={{ borderRadius: 2 }}
                   >
                     {processingOrder ? <CircularProgress size={24} color="inherit" /> : "Proses Pembayaran"}
@@ -840,15 +849,15 @@ const Products = () => {
       {/* Notifications */}
       <Snackbar
         open={notification.open}
-        autoHideDuration={3000}
+        autoHideDuration={300}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert 
           onClose={handleCloseNotification} 
           severity={notification.type}
           variant="filled"
-          sx={{ width: '100%' }}
+          sx={{ width: '99%' }}
         >
           {notification.message}
         </Alert>

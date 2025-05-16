@@ -10,30 +10,28 @@ var jwtSecret = []byte("582889w67888")
 
 // Struct untuk claims JWT
 type Claims struct {
-    Email   string `json:"email"`
-    Role    string `json:"role"`
+    UserID   string `json:"user_id"`
+    Email    string `json:"email"`
+    Role     string `json:"role"`
     BranchID string `json:"branch_id"`
     jwt.StandardClaims
 }
 
-// Generate JWT token
-func GenerateJWT(email, role, branchID string) (string, error) {
+func GenerateJWT(userID, email, role, branchID string) (string, error) {
     claims := Claims{
-        Email:   email,
-        Role:    role,
+        UserID:   userID,
+        Email:    email,
+        Role:     role,
         BranchID: branchID,
         StandardClaims: jwt.StandardClaims{
-            ExpiresAt: time.Now().Add(24 * time.Hour).Unix(), // Token expired in 24 hours
+            ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
         },
     }
 
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    signedToken, err := token.SignedString(jwtSecret)
-    if err != nil {
-        return "", err
-    }
-    return signedToken, nil
+    return token.SignedString(jwtSecret)
 }
+
 
 // Validate JWT token
 func ValidateJWT(tokenString string) (*Claims, error) {
