@@ -5,6 +5,7 @@ import Transaksi from './pages/Transaksi';
 import Riwayat from './pages/Riwayat';
 import Produk from './pages/Produk';
 import Laporan from './pages/Laporan';
+import PendingOrdersPage from './pages/PendingOrdersPage';
 import PaymentPage from './pages/PaymentPage';
 import PrivateRoute from './routes/PrivateRoute';
 import AppLayout from './components/AppLayout';
@@ -31,6 +32,7 @@ function App() {
           <Route path="produk" element={<Produk />} />
           <Route path="laporan" element={<Laporan />} />
           <Route path="payment" element={<PaymentPage />} />
+          <Route path="/pending-orders" element={<PendingOrdersPage />} />
         </Route>
       </Routes>
     </Router>

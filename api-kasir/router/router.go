@@ -124,6 +124,14 @@ func SetRoutes(app *fiber.App) {
 	app.Get("/branches/:branch_id/dashboard/top-products", handlers.GetTopProductsToday)
 	app.Get("/branches/:branch_id/dashboard/weekly-sales", handlers.GetWeeklySales)
 	
+    app.Post("/pending-orders", middleware.JWTMiddleware, handlers.CreatePendingOrder)
+    
+   app.Get("/pending-orders", middleware.JWTMiddleware, handlers.GetPendingOrders)
+   app.Get("/pending-orders/:id", middleware.JWTMiddleware, handlers.GetPendingOrderByID)
+   app.Patch("/pending-orders/:id", middleware.JWTMiddleware, handlers.UpdatePendingOrder)
+   app.Delete("/pending-orders/:id", middleware.JWTMiddleware, handlers.DeletePendingOrder)
+	
+	
 	
 	
 }

@@ -13,6 +13,8 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"time"
+	"strings"
 )
 
 type PaymentRequest struct {
@@ -22,6 +24,15 @@ type PaymentRequest struct {
 	} `json:"items"`
 	PaymentMethod string  `json:"payment_method"`
 	PaidAmount    float64 `json:"paid_amount"`
+}
+
+type PendingOrder struct {
+	ID        string          `json:"id"`
+	BranchID  string          `json:"branch_id"`
+	UserID    string          `json:"user_id"`
+	Orders    json.RawMessage `json:"orders"` // JSON array
+	Note      string          `json:"note,omitempty"`
+	CreatedAt time.Time       `json:"created_at"`
 }
 
 
@@ -97,8 +108,7 @@ func HandlePayment(c *fiber.Ctx) error {
 		"change":         req.PaidAmount - total,
 	}
 
-	trxJSON, _ := json.Marshal(trxPayload)
-	
+	trxJSON,err:= json.Marshal(trxPayload)
 	/*trxReq, err := utils.NewRequest(http.MethodPost, "transactions", bytes.NewBuffer(trxJSON))
 	*/
 	
@@ -120,6 +130,7 @@ func HandlePayment(c *fiber.Ctx) error {
    body, err := io.ReadAll(trxRes.Body)
    if err != nil {
     return c.Status(500).JSON(fiber.Map{
+        
         "message": "Gagal membaca response dari Supabase",
     })
     }

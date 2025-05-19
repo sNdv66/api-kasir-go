@@ -127,6 +127,7 @@ const CartFab = styled(Fab)(({ theme }) => ({
 // Main component
 const Products = () => {
   const { user, token } = useAuth();
+  const userId = user?.id;
   const branchId = user?.branch_id || "";
   const [products, setProducts] = useState<Product[]>([]);
   const [filtered, setFiltered] = useState<Product[]>([]);
@@ -298,22 +299,49 @@ const Products = () => {
   // Pindah ke halaman payment
   navigate("/payment");
 };
-  
-
   // Handle save order
-  const handleSaveOrder = () => {
-    setSavingOrder(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setSavingOrder(false);
-      setNotification({
-        open: true,
-        message: 'Pesanan berhasil disimpan!',
-        type: 'success'
-      });
-    }, 1500);
+  const handleSaveOrder = async () => {
+  if (!user) {
+    setNotification({
+      open: true,
+      message: 'User belum login!',
+      type: 'error'
+    });
+    return;
+  }
+
+  const payload = {
+    branch_id: user.branch_id,
+    user_id: user.id,
+    note: '',
+    orders: orders.map(item => ({
+      product_id: item.id,
+      quantity: item.quantity,
+      subtotal: item.quantity * item.price
+    }))
   };
+
+  console.log('Payload yang dikirim ke backend:', payload);
+
+  try {
+    await axios.post('http://127.0.0.1:3000/pending-orders', payload, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    navigate('/pending-orders');
+  } catch (err) {
+    console.error('Gagal menyimpan pesanan:', err.response?.data || err.message);
+    setNotification({
+      open: true,
+      message: 'Gagal menyimpan pesanan',
+      type: 'error'
+    });
+  } finally {
+    setSavingOrder(false);
+  }
+};
+
 
   // Handle close notification
   const handleCloseNotification = () => {
@@ -814,18 +842,18 @@ const Products = () => {
               
               <Grid container spacing={1}>
                 <Grid item xs={6}>
-                  <Button 
-                    fullWidth 
-                    variant="outlined"
-                    color="secondary"
-                    size="large"
-                    onClick={handleSaveOrder}
-                    disabled={processingOrder || savingOrder}
-                    startIcon={<SaveIcon />}
-                    sx={{ borderRadius: 2 }}
-                  >
-                    {savingOrder ? <CircularProgress size={24} /> : "Simpan"}
-                  </Button>
+                <Button 
+                fullWidth 
+                variant="outlined"
+                color="secondary"
+                size="large"
+                onClick={handleSaveOrder}
+                disabled={processingOrder || savingOrder}
+                startIcon={<SaveIcon />}
+                sx={{ borderRadius: 2 }}
+                 >
+                 {savingOrder ? <CircularProgress size={24} /> : "Simpan"}
+                </Button>
                 </Grid>
                 <Grid item xs={6}>
                   <Button 

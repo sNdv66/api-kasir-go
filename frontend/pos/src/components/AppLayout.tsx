@@ -39,9 +39,10 @@ const drawerWidth = 240;
 const menuItems = [
   { text: "Dashboard", icon: <Dashboard />, path: "/dashboard" },
   { text: "Transaksi", icon: <PointOfSale />, path: "/transaksi" },
-  { text: "Riwayat", icon: <History />, path: "/riwayat" },
+  { text: "Riwayat", icon: <History />, path: "/pending-orders"},
   { text: "Produk", icon: <Inventory />, path: "/produk" },
   { text: "Laporan", icon: <BarChart />, path: "/laporan" },
+  
 ];
 
 const AppLayout = () => {
