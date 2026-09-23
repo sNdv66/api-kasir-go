@@ -1,10 +1,9 @@
-project-name = ApiQasir-Multicabang
-password = hydHJ7oSEoJgdBkk
+project-name = 
+password = 
 
 url : https://thgswhfsrlkpbbohpjsq.supabase.co
 
-keys : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZ3N3aGZzcmxrcGJib2hwanNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU1MTQ4NTAsImV4cCI6MjA2MTA5MDg1MH0.wmPfjyKcTZ7NAIFBqXnRiU1J4QQllWUHlT_Me443kwE
-
+keys :b-+
 
 
 Struktur Tabel Database di Supabase
@@ -78,15 +77,10 @@ CREATE TABLE stock_movements (
 
 
 
-Mantap, kamu sudah berhasil mendapatkan data cabang dari Supabase lewat endpoint /branches—artinya backend Go + Fiber + Supabase kamu sudah jalan!
 
 
 
 ---
-
-Selanjutnya, untuk membuat API Kasir Multi Cabang, kamu bisa lanjut ke fitur-fitur utama. Berikut roadmap singkatnya:
-
-
 ---
 
 Roadmap Fitur API Kasir Multi Cabang
@@ -142,18 +136,6 @@ Roadmap Fitur API Kasir Multi Cabang
 
 
 ---
-
-Mau Mulai dari Mana?
-
-Rekomendasi step berikutnya:
-
-→ Buat endpoint POST /branches untuk tambah cabang ke Supabase.
-
-Kalau setuju, aku bantu siapkan file handler, router, dan fungsi Supabase-nya.
-
-Lanjut ke POST /branches?
-
-
 
 
 curl -X GET http://localhost:3000/transactions/5ecf2675-5f10-4557-ace0-d4fc7dfe662a/items \
